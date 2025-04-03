@@ -64,6 +64,7 @@
       z-index: 9999;
       cursor: pointer;
       pointer-events: auto;
+      touch-action: manipulation;
     }
 
     #tap-counter {
@@ -195,7 +196,6 @@
     }
 
     counterEl.addEventListener('click', toggleMode);
-    counterEl.addEventListener('touchstart', toggleMode);
 
     function toggleMode() {
       chillMode = !chillMode;
