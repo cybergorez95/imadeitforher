@@ -13,41 +13,148 @@
       font-family: 'Comfortaa', sans-serif;
     }
 
-    .letter, .heart {
+    .letter, .heart, .click-heart, .gator, .coin {
       position: absolute;
       top: 0;
-      font-size: 32px;
+      font-size: 36px;
       font-weight: bold;
-      color: white;
       animation: fall linear;
-      pointer-events: none;
+      pointer-events: auto;
+      will-change: transform;
+    }
+
+    .letter {
+      color: white;
+      text-shadow: 0 0 10px white, 0 0 20px deeppink;
     }
 
     .heart {
-      font-size: 24px;
+      font-size: 28px;
       color: red;
+      text-shadow: 0 0 10px white, 0 0 20px red;
+    }
+
+    .coin {
+      font-size: 28px;
+      color: gold;
+    }
+
+    .gator {
+      font-size: 36px;
+      cursor: pointer;
+    }
+
+    .click-heart {
+      font-size: 24px;
+      animation: floatUp 1s ease-out forwards;
+      color: red;
+      pointer-events: none;
+    }
+
+    #gator-counter {
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: white;
+      color: black;
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 18px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      z-index: 9999;
+      cursor: pointer;
+      pointer-events: auto;
+    }
+
+    #tap-counter {
+      position: fixed;
+      top: 50px;
+      right: 10px;
+      background: white;
+      color: black;
+      padding: 6px 12px;
+      border-radius: 12px;
+      font-size: 16px;
+      box-shadow: 0 0 6px rgba(0, 0, 0, 0.2);
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    #mode-indicator {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 22px;
+      font-weight: bold;
+      color: white;
+      text-shadow: 0 0 5px black;
+      z-index: 9999;
+      pointer-events: none;
     }
 
     @keyframes fall {
+      0%   { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+      10%  { opacity: 1; }
+      25%  { transform: translateY(25vh) translateX(-10px) rotate(3deg); }
+      50%  { transform: translateY(50vh) translateX(10px) rotate(-3deg); }
+      75%  { transform: translateY(75vh) translateX(-10px) rotate(3deg); }
+      100% { transform: translateY(100vh) translateX(0) rotate(-3deg); opacity: 1; }
+    }
+
+    @keyframes floatUp {
       0% { transform: translateY(0); opacity: 1; }
-      100% { transform: translateY(100vh); opacity: 1; }
+      100% { transform: translateY(-50px); opacity: 0; }
+    }
+
+    @keyframes explode {
+      0% { transform: scale(1); opacity: 1; }
+      100% { transform: scale(2); opacity: 0; }
     }
   </style>
 </head>
 <body>
+  <div id="mode-indicator">work!</div>
+  <div id="gator-counter">🐊 0</div>
+  <div id="tap-counter">✨ taps: 0</div>
   <script>
     const heart = '❤️';
+    const gator = '🐊';
+    const coin = '🪙';
+    let gatorCount = 0;
+    let tapCount = 0;
+    let chillMode = false;
+
+    const counterEl = document.getElementById('gator-counter');
+    const tapCounterEl = document.getElementById('tap-counter');
+    const modeIndicator = document.getElementById('mode-indicator');
 
     function createFallingElement() {
-      const span = document.createElement('span');
-      const isHeart = Math.random() < 0.6; // 60% шанс на сердечко
+      if (document.body.childElementCount > 250) return;
 
-      if (isHeart) {
-        span.classList.add('heart');
-        span.textContent = heart;
+      const span = document.createElement('span');
+      const rand = Math.random();
+
+      if (!chillMode && rand < 0.05) {
+        span.classList.add('gator');
+        span.textContent = gator;
+        span.addEventListener('click', explodeElement);
+        span.addEventListener('touchstart', explodeElement);
+      } else if (chillMode) {
+        if (rand < 0.5) {
+          span.classList.add('letter');
+          span.textContent = 'А';
+        } else {
+          span.classList.add('heart');
+          span.textContent = heart;
+        }
       } else {
-        span.classList.add('letter');
-        span.textContent = 'А';
+        if (rand < 0.7) {
+          span.classList.add('heart');
+          span.textContent = heart;
+        } else {
+          span.classList.add('letter');
+          span.textContent = 'А';
+        }
       }
 
       span.style.left = Math.random() * window.innerWidth + 'px';
@@ -55,13 +162,49 @@
       span.style.animationDuration = duration + 's';
 
       document.body.appendChild(span);
-
-      setTimeout(() => {
-        span.remove();
-      }, duration * 1000);
+      setTimeout(() => span.remove(), duration * 1000);
     }
 
-    setInterval(createFallingElement, 50); // Увеличена частота создания
+    function explodeElement(event) {
+      const target = event.currentTarget;
+      target.style.animation = 'explode 0.4s ease-out forwards';
+      setTimeout(() => target.remove(), 400);
+      gatorCount++;
+      counterEl.textContent = `🐊 ${gatorCount}`;
+    }
+
+    function createClickHeart(x, y) {
+      const heartEl = document.createElement('span');
+      heartEl.classList.add('click-heart');
+      heartEl.textContent = heart;
+      heartEl.style.left = `${x}px`;
+      heartEl.style.top = `${y}px`;
+
+      document.body.appendChild(heartEl);
+      setTimeout(() => heartEl.remove(), 1000);
+    }
+
+    function handleHeartSpawn(event) {
+      const x = event.clientX || (event.touches && event.touches[0].clientX);
+      const y = event.clientY || (event.touches && event.touches[0].clientY);
+      if (x != null && y != null) {
+        createClickHeart(x, y);
+        tapCount++;
+        tapCounterEl.textContent = `✨ taps: ${tapCount}`;
+      }
+    }
+
+    counterEl.addEventListener('click', toggleMode);
+    counterEl.addEventListener('touchstart', toggleMode);
+
+    function toggleMode() {
+      chillMode = !chillMode;
+      modeIndicator.textContent = chillMode ? 'relax!' : 'work!';
+    }
+
+    setInterval(createFallingElement, 80);
+    document.addEventListener('click', handleHeartSpawn);
+    document.addEventListener('touchstart', handleHeartSpawn);
   </script>
 </body>
 </html>
